@@ -1563,6 +1563,14 @@ networks:
 * **Tiered Security:** Keep your database on a `backend` network and your API on both `frontend` and `backend`. This way, the database is never exposed to the public-facing side.
 * **Microservices:** If you have 10 services, you can group them into "Domain Networks" (e.g., `payment-net`, `inventory-net`) so a breach in one doesn't expose the entire system.
 
+**Why use a custom network instead of the default?**
+
+| Feature | Default Docker Network | Custom Bridge Network (Your Code) |
+| :--- | :--- | :--- |
+| **Service Discovery** | No. You must use IP addresses. | **Yes.** You can use the service name (e.g., `jdbc:postgresql://database:5432/`). |
+| **Isolation** | All containers on the host can potentially talk. | Only containers explicitly listed under `networks` can talk. |
+| **Security** | Lower. | Higher. You keep your DB off the default public bridge. |
+
 ### Restart: The "Self-Healing" Policy
 
 Containers can crash due to code bugs, out-of-memory (OOM) errors, or the host machine rebooting. The `restart` policy tells Docker how to handle these failures without human intervention.
