@@ -1530,6 +1530,68 @@ When you install Docker Desktop on Windows or Mac, it automatically sets up a ti
  |_______________________________________|
 ```
 
+## Understanding "networks" and "restart" in a docker-compose file
+
+In Docker Compose, **Networks** and **Restart** policies are the gears that manage how your containers talk to each other and how they recover when things go wrong.
+
+### Networks: The "Internal Switchboard"
+
+By default, Docker Compose sets up a single network for your stack. However, defining custom networks allows you to **isolate** traffic and use **Service Discovery** (calling a container by its name instead of an unstable IP address).
+
+You define the network at the bottom and link services to it.
+
+```yaml
+services:
+  web-app:
+    image: spring-boot-app
+    networks:
+      - frontend
+
+  database:
+    image: postgres
+    networks:
+      - backend  # Notice web-app cannot see the DB yet!
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+```
+
+**Uses**
+* **Tiered Security:** Keep your database on a `backend` network and your API on both `frontend` and `backend`. This way, the database is never exposed to the public-facing side.
+* **Microservices:** If you have 10 services, you can group them into "Domain Networks" (e.g., `payment-net`, `inventory-net`) so a breach in one doesn't expose the entire system.
+
+### Restart: The "Self-Healing" Policy
+
+Containers can crash due to code bugs, out-of-memory (OOM) errors, or the host machine rebooting. The `restart` policy tells Docker how to handle these failures without human intervention.
+
+Added directly under a specific service:
+
+```yaml
+services:
+  api:
+    image: my-api
+    restart: always # or on-failure, unless-stopped
+```
+
+**Options & When to use them**
+
+| Policy | Behavior | Best Use Case |
+| :--- | :--- | :--- |
+| **no** | (Default) Does not restart. | One-off scripts or migrations. |
+| **always** | Restarts regardless of the exit code or even if the Docker daemon restarts. | Critical services like Databases or Load Balancers. |
+| **on-failure** | Restarts only if the container exits with a non-zero error code. | Background workers or CI/CD runners. |
+| **unless-stopped** | Like `always`, but won't restart if you manually ran `docker stop`. | Standard web services where you want manual control. |
+
+### Summary
+
+* **Networks** are for **Security and Discovery**. Use them to minimize the "blast radius" of a security incident.
+* **Restart Policies** are for **Availability**. Use them to ensure your system survives transient failures.
+
+In your recent Jenkins-to-Harness migration, are you looking to use these Compose features for local development environment parity, or are you defining these for a container orchestration layer?
+
 ## Kubernetes
 
 Kubernetes is an **Orchestration Tool** allowing you to run and manage your container-based workloads
